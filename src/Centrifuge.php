@@ -6,9 +6,12 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use LaraComponents\Centrifuge\Contracts\Centrifuge as CentrifugeContract;
-use Lcobucci\JWT\Builder;
+
+use \DateTimeImmutable;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\Signer\Key;
+
 use Lcobucci\JWT\Token;
 use Carbon\Carbon;
 
@@ -271,17 +274,21 @@ class Centrifuge implements CentrifugeContract
 	 *
 	 * @return Token
 	 */
-	public function generateToken(string $userId)
-	{
-		$signer = new Sha256();
+	 public function generateToken(string $userId)
+ 	{
+ 		$config = Configuration::forSymmetricSigner(
+		    new Sha256(),
+		    InMemory::base64Encoded(base64_encode ($this->config['secret']))
+		);
 
-		$token = (new Builder())->issuedBy($this->config['token_issuer'])
-			->expiresAt(Carbon::now()->getTimestamp() + $this->config['token_ttl'])
-            ->withClaim('sub', $userId)
-			->getToken($signer, new Key($this->config['secret']));
+ 		$token = $config->builder()
+ 			->issuedBy($this->config['token_issuer'])
+ 			->expiresAt((new DateTimeImmutable())->modify('+'.$this->config['token_ttl'].' seconds'))
+      ->withClaim('uid', $userId)
+ 			->getToken($config->signer(), $config->signingKey());
 
-		return $token;
-	}
+ 		return $token->toString();
+ 	}
 
     /**
      * Generate JWT privateChanelToken for client.
