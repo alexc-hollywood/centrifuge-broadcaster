@@ -284,7 +284,7 @@ class Centrifuge implements CentrifugeContract
  		$token = $config->builder()
  			->issuedBy($this->config['token_issuer'])
  			->expiresAt((new DateTimeImmutable())->modify('+'.$this->config['token_ttl'].' seconds'))
-      ->withClaim('uid', $userId)
+      			->relatedTo($userId)
  			->getToken($config->signer(), $config->signingKey());
 
  		return $token->toString();
